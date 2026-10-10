@@ -6,6 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent Pages deployment; skip queue in favor of latest build
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   native:
     name: Native build + tests
@@ -35,3 +45,23 @@ jobs:
           path: |
             web/rajsql.js
             web/rajsql.wasm
+
+  deploy-pages:
+    name: Deploy playground to GitHub Pages
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [native, wasm]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build WASM
+        run: bash build-wasm.sh
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
