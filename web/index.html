@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RajSQL: SQL engine in C++ compiled to WebAssembly</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Error overlay shown when the WASM module fails to load -->
+<div id="load-overlay" class="load-overlay" hidden>
+  <div class="load-card">
+    <div class="load-spinner" id="load-spinner"></div>
+    <div id="load-msg">Loading RajSQL WebAssembly module…</div>
+    <div id="load-sub" class="load-sub">First load compiles the engine; it then runs entirely offline.</div>
+  </div>
+</div>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="wordmark">
+      <span class="wordmark-name">Raj<span class="accent">SQL</span></span>
+      <span class="tagline">A SQL database engine written from scratch in C++, compiled to WebAssembly and running entirely in your browser.</span>
+    </div>
+    <div class="header-actions">
+      <span class="badge">C++ → WASM · zero server</span>
+      <button id="btn-docs" class="btn btn-ghost">Docs</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ============ Sidebar ============ -->
+  <aside class="sidebar">
+    <div class="panel sidebar-panel">
+      <div class="panel-title">SCHEMA</div>
+      <div id="schema-list" class="schema-list">
+        <div class="schema-empty muted">No tables yet. Load the sample database or run a CREATE TABLE.</div>
+      </div>
+      <div class="sidebar-buttons">
+        <button id="btn-sample" class="btn btn-primary">Load sample database</button>
+        <button id="btn-crash" class="btn">Crash &amp; recover demo</button>
+        <button id="btn-persist" class="btn">Persist now</button>
+        <button id="btn-reset" class="btn btn-danger-ghost">Reset database</button>
+      </div>
+      <div id="persist-status" class="persist-status muted">Loading…</div>
+    </div>
+  </aside>
+
+  <!-- ============ Main column ============ -->
+  <main class="main">
+    <!-- Editor -->
+    <section class="panel editor-panel">
+      <div class="editor-toolbar">
+        <span class="panel-title">SQL EDITOR</span>
+        <span class="editor-hint muted">Ctrl+Enter to run · Tab indents · ↑/↓ history</span>
+        <button id="btn-run" class="btn btn-primary">Run ▸</button>
+      </div>
+      <div class="editor-wrap">
+        <pre id="editor-highlight" class="editor-layer" aria-hidden="true"></pre>
+        <textarea id="editor" class="editor-layer" spellcheck="false" autocapitalize="off" autocomplete="off"
+          placeholder="Type SQL here, e.g. SELECT * FROM students LIMIT 5;"></textarea>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="panel results-panel">
+      <div class="panel-title">RESULTS</div>
+      <div id="results" class="results">
+        <div class="muted results-empty">Run a query to see results.</div>
+      </div>
+    </section>
+
+    <!-- Crash demo timeline (populated on demand) -->
+    <section class="panel crash-panel" id="crash-panel" hidden>
+      <div class="panel-title">CRASH &amp; RECOVER (WAL DEMONSTRATION)</div>
+      <div id="crash-timeline" class="crash-timeline"></div>
+      <div id="crash-summary" class="crash-summary"></div>
+    </section>
+
+    <!-- Examples -->
+    <section class="panel examples-panel">
+      <div class="panel-title">EXAMPLES <span class="muted small">click to load into the editor</span></div>
+      <div id="examples" class="examples"></div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ Docs modal ============ -->
+<div id="docs-modal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="docs-title">
+    <div class="modal-header">
+      <h2 id="docs-title">RajSQL: SQL cheat sheet</h2>
+      <button id="btn-docs-close" class="btn btn-ghost" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="doc-row"><code>CREATE TABLE students (id INTEGER, name TEXT, gpa REAL)</code><span>Create a table. Types: INTEGER, REAL, TEXT (NULL is free-form).</span></div>
+      <div class="doc-row"><code>INSERT INTO students VALUES (1, 'Raj', 3.9)</code><span>Insert a row; column list is optional.</span></div>
+      <div class="doc-row"><code>SELECT name, gpa FROM students WHERE gpa &gt; 3.5 AND major = 'CS'</code><span>Query with a filter. AND / OR / NOT supported.</span></div>
+      <div class="doc-row"><code>SELECT * FROM students ORDER BY gpa DESC LIMIT 5</code><span>Sort and limit results.</span></div>
+      <div class="doc-row"><code>SELECT COUNT(*), AVG(gpa) FROM students</code><span>Aggregates: COUNT, SUM, AVG, MIN, MAX.</span></div>
+      <div class="doc-row"><code>SELECT s.name, c.title FROM students s JOIN enrollments e ON s.id = e.student_id JOIN courses c ON e.course_id = c.course_id</code><span>INNER JOIN with ON.</span></div>
+      <div class="doc-row"><code>UPDATE students SET gpa = 4.0 WHERE id = 1</code><span>Update matching rows.</span></div>
+      <div class="doc-row"><code>DELETE FROM students WHERE id = 1</code><span>Delete matching rows.</span></div>
+      <div class="doc-row"><code>BEGIN; INSERT …; ROLLBACK;</code><span>Transactions: BEGIN / COMMIT / ROLLBACK.</span></div>
+      <div class="doc-note"><strong>Every table has an implicit <code>rowid</code> INTEGER primary key</strong>: rows are addressable even without a declared key.</div>
+      <div class="doc-note"><strong>Deletes are tombstones</strong>: removed rows are marked rather than physically rewritten, keeping deletes cheap.</div>
+      <div class="doc-note"><strong>WAL gives crash safety</strong>: writes go to a write-ahead log and are checkpointed into the main file; after a crash the WAL is replayed on startup, so committed data survives.</div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

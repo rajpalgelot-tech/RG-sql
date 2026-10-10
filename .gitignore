@@ -1,0 +1,29 @@
+# Build outputs
+build/
+build-*/
+dist/
+cmake-build-*/
+out/
+
+# Compiled binaries
+rajsql_tests
+rajsql_cli
+*.o
+*.obj
+*.a
+
+# WASM build outputs
+
+# Database files
+*.db
+*.db.wal
+*.wal
+
+# Node / JS tooling
+node_modules/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
